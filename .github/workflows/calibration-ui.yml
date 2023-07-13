@@ -1,0 +1,73 @@
+name: Deploy Calibration UI
+
+on:
+  workflow_dispatch:
+    inputs:
+      repoName:
+        description: 'Repository to Deploy'     
+        required: true
+        type: choice
+        default: 'calibration-ui'
+        options:
+          - calibration-ui
+      shaId:
+        description: 'Commit id to Deploy'     
+        required: true
+        default: 'main'
+      deployEnvironment:
+        description: 'Environment to Deploy'     
+        required: true
+        type: choice
+        default: 'dev'
+        options:
+          - dev
+          - prod
+
+env:
+  REPO_NAME: ${{ github.event.inputs.repoName }}
+  AWS_REGION: ap-south-1
+  SHA_ID: ${{ github.event.inputs.shaId }}
+  DEPLOY_ENV: ${{ github.event.inputs.deployEnvironment }}
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout main branch
+      if: ${{ env.SHA_ID == 'main'}}
+      uses: actions/checkout@v3
+      with:
+        ref: refs/heads/${{ env.SHA_ID }}
+        repository: Vivanet-Org/${{ env.REPO_NAME }}
+        token: ${{ secrets.GIT_TOKEN }}
+    - name: Checkout Commit id
+      if: ${{ env.SHA_ID != 'main'}}
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ env.SHA_ID }}
+        repository: Vivanet-Org/${{ env.REPO_NAME }}
+        token: ${{ secrets.GIT_TOKEN }}
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+    
+    - name: Setup Node
+      uses: actions/setup-node@v2.5.1
+      with:
+        node-version: '16'
+
+    - name: Build UI Bundle
+      run: |
+        npm install
+        npm run build
+
+    - name: Upload to S3
+      run: |
+        aws s3 sync build/ s3://sarvashree-calibration-ui/ --delete
+      
