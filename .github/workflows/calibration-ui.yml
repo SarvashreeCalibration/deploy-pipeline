@@ -67,7 +67,13 @@ jobs:
         npm install
         npm run build
 
-    - name: Upload to S3
+    - name: Upload to Prod S3
+      if: ${{ env.SHA_ID == 'prod'}}
       run: |
         aws s3 sync build/ s3://sarvashree-calibration-ui/ --delete
+
+    - name: Upload to Dev S3
+      if: ${{ env.SHA_ID == 'dev'}}
+      run: |
+        aws s3 sync build/ s3://sarvashree-calibration-ui-dev/ --delete
       
