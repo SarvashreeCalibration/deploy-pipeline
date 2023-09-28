@@ -57,7 +57,7 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: Set up JDK 17
+    - name: Set up JDK 17 and Build
       uses: actions/setup-java@v3
       with:
         java-version: '17'
@@ -70,5 +70,6 @@ jobs:
         USER_NAME: ${{secrets.USER_NAME}}
       run: |
         mvn clean install
+        ls -la
         echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
         scp -o StrictHostKeyChecking=no -i private_key /target/calibrations-services.jar ${USER_NAME}@${HOSTNAME}:/home/ec2-user
