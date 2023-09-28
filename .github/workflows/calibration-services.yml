@@ -72,4 +72,4 @@ jobs:
         mvn clean install
         ls -la
         echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
-        scp -o StrictHostKeyChecking=no -i private_key target/calibrations-services.jar ${USER_NAME}@${HOSTNAME}:/home/ec2-user
+        scp -o StrictHostKeyChecking=no -i private_key target/calibration-services.jar ${USER_NAME}@${HOSTNAME}:/home/ec2-user
