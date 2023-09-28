@@ -73,3 +73,9 @@ jobs:
         ls -la
         echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
         scp -o StrictHostKeyChecking=no -i private_key target/calibration-services.jar ${USER_NAME}@${HOSTNAME}:/home/ec2-user
+        ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${HOSTNAME} '
+        rm -rf calibration-services-dev.jar
+        mv calibration-services.jar calibration-services-dev.jar
+        kill $(lsof -t -i :8083)
+        nohup java -jar calibration-services-dev.jar --server.port=8083
+        '
