@@ -78,4 +78,5 @@ jobs:
         mv calibration-services.jar calibration-services-dev.jar
         kill $(lsof -t -i :8083)
         java -jar calibration-services-dev.jar --server.port=8083
+        exit 1
         '
