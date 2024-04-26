@@ -63,18 +63,40 @@ jobs:
         java-version: '17'
         distribution: 'corretto'
         cache: maven
-    - name: Build
-      env:
-        PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        HOSTNAME: ${{secrets.SSH_HOST}}
-        USER_NAME: ${{secrets.USER_NAME}}
+    - name: Build with Maven
       run: |
-        mvn clean install
-        ls -la
-        echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
-        scp -o StrictHostKeyChecking=no -i private_key target/calibration-services.jar ${USER_NAME}@${HOSTNAME}:/home/ec2-user
-        ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${HOSTNAME} '
-        rm -rf calibration-services-dev.jar
-        mv calibration-services.jar calibration-services-dev.jar
-        kill $(lsof -t -i :8083)
-        '
+        if [[ "${{ env.DEPLOY_ENV }}" == "prod" ]]; then
+          mvn -Pprod clean install
+        else
+          mvn -Pdev clean install
+        fi
+ 
+    - name: Upload jar in ec2
+      uses: easingthemes/ssh-deploy@main
+      with:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        REMOTE_HOST: ${{ secrets.SSH_HOST }}
+        REMOTE_USER: ${{ secrets.REMOTE_USER }}
+        TARGET: ${{ secrets.REMOTE_HOME_TARGET }}
+        local_deploy_path: target/calibration-service-${{ env.DEPLOY_ENV }}.jar
+        EXCLUDE: 'pom.xml,/src/,README.md,HELP.md,mvnw,mvnw.cmd,/target/classes/,/target/generated-sources/,/target/maven-archiver/,/target/surefire-reports/,/target/generated-test-sources/,/target/maven-status/,/target/test-classes/,/target/*.original'
+    - name: Generate Timestamp
+      id: timestamp
+      run: echo "::set-output name=timestamp::$(date +%s)"
+ 
+    - name: Run jar
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.REMOTE_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          if [[ "${{ env.DEPLOY_ENV }}" == "prod" ]]; then
+            PORT=8080;
+          else
+            PORT=8083;
+          fi
+          kill $(lsof -t -i :$PORT) > /dev/null 2>&1;
+          # aws s3 mv calibrationlog-${{ env.DEPLOY_ENV }}-logs-*.out s3://calibration-service-${{ env.DEPLOY_ENV }}-logs
+          nohup java -jar ${{ secrets.REMOTE_HOME_TARGET }}/target/calibration-service-${{ env.DEPLOY_ENV }}.jar --server.port=$PORT > calibrationlog-${{ env.DEPLOY_ENV }}-logs-$(date -d @${{ steps.timestamp.outputs.timestamp }} +"%Y-%m-%d_%H-%M-%S").out 2>&1 &
+          exit
