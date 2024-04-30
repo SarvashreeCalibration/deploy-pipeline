@@ -79,7 +79,7 @@ jobs:
         REMOTE_USER: ${{ secrets.REMOTE_USER }}
         TARGET: ${{ secrets.REMOTE_HOME_TARGET }}
         local_deploy_path: target/calibration-service-${{ env.DEPLOY_ENV }}.jar
-        EXCLUDE: 'pom.xml,/src/,README.md,HELP.md,mvnw,mvnw.cmd,/target/classes/,/target/generated-sources/,/target/maven-archiver/,/target/surefire-reports/,/target/generated-test-sources/,/target/maven-status/,/target/test-classes/,/target/*.original'
+        EXCLUDE: 'pom.xml,/src/,README.md,HELP.md,mvnw,mvnw.cmd,.git,.gitignore,/target/classes/,/target/generated-sources/,/target/maven-archiver/,/target/surefire-reports/,/target/generated-test-sources/,/target/maven-status/,/target/test-classes/,/target/*.original'
     - name: Generate Timestamp
       id: timestamp
       run: echo "::set-output name=timestamp::$(date +%s)"
@@ -97,6 +97,6 @@ jobs:
             PORT=8083;
           fi
           kill $(lsof -t -i :$PORT) > /dev/null 2>&1;
-          # aws s3 mv calibrationlog-${{ env.DEPLOY_ENV }}-logs-*.out s3://calibration-service-${{ env.DEPLOY_ENV }}-logs
-          nohup java -jar ${{ secrets.REMOTE_HOME_TARGET }}/target/calibration-service-${{ env.DEPLOY_ENV }}.jar --server.port=$PORT > calibrationlog-${{ env.DEPLOY_ENV }}-logs-$(date -d @${{ steps.timestamp.outputs.timestamp }} +"%Y-%m-%d_%H-%M-%S").out 2>&1 &
+          aws s3 mv ec2-server-logs-${{ env.DEPLOY_ENV }}-logs-*.out s3://calibration-service-${{ env.DEPLOY_ENV }}-logs
+          nohup java -jar ${{ secrets.REMOTE_HOME_TARGET }}/target/calibration-service-${{ env.DEPLOY_ENV }}.jar --server.port=$PORT > ec2-server-logs-${{ env.DEPLOY_ENV }}-logs-$(date -d @${{ steps.timestamp.outputs.timestamp }} +"%Y-%m-%d_%H-%M-%S").out 2>&1 &
           exit
