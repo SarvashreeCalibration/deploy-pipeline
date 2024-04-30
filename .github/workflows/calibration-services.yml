@@ -97,6 +97,6 @@ jobs:
             PORT=8083;
           fi
           kill $(lsof -t -i :$PORT) > /dev/null 2>&1;
-          aws s3 mv ec2-server-logs-${{ env.DEPLOY_ENV }}-logs-*.out s3://calibration-service-${{ env.DEPLOY_ENV }}-logs
-          nohup java -jar ${{ secrets.REMOTE_HOME_TARGET }}/target/calibration-service-${{ env.DEPLOY_ENV }}.jar --server.port=$PORT > ec2-server-logs-${{ env.DEPLOY_ENV }}-logs-$(date -d @${{ steps.timestamp.outputs.timestamp }} +"%Y-%m-%d_%H-%M-%S").out 2>&1 &
+          aws s3 mv calibrationlog-${{ env.DEPLOY_ENV }}-logs-*.out s3://ec2-server-logs
+          nohup java -jar ${{ secrets.REMOTE_HOME_TARGET }}/target/calibration-service-${{ env.DEPLOY_ENV }}.jar --server.port=$PORT > calibrationlog-${{ env.DEPLOY_ENV }}-logs-$(date -d @${{ steps.timestamp.outputs.timestamp }} +"%Y-%m-%d_%H-%M-%S").out 2>&1 &
           exit
